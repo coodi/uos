@@ -41,4 +41,5 @@
 	url = https://github.com/UOSnetwork/singularity
 
 [submodule "libraries/AMQP-CPP"]
+    path = libraries/AMQP-CPP
 	url = https://github.com/CopernicaMarketingSoftware/AMQP-CPP
