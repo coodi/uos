@@ -36,6 +36,7 @@ add_subdirectory(payloadless)
 add_subdirectory(integration_test)
 add_subdirectory(uos_contracts/uos.activity)
 add_subdirectory(uos_contracts/uos.calculator)
+add_subdirectory(uos_contracts/hello_merkle)
 
 
 file(GLOB SKELETONS RELATIVE ${CMAKE_SOURCE_DIR}/contracts "skeleton/*")

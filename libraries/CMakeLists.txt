@@ -10,6 +10,7 @@ add_subdirectory( testing )
 add_subdirectory( abi_generator )
 add_subdirectory( wabt )
 add_subdirectory( singularity )
+add_subdirectory( AMQP-CPP )
 #turn these off for now
 set(BUILD_TESTS OFF CACHE BOOL "Build GTest-based tests")
 set(BUILD_TOOLS OFF CACHE BOOL "Build wabt tools")
