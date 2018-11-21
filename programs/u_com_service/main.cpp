@@ -1,0 +1,32 @@
+#include <iostream>
+#include <fc/variant_object.hpp>
+#include <fc/io/json.hpp>
+#include "SimplePocoHandler.h"
+
+#include <amqpcpp.h>
+
+
+int main(){
+
+    SimplePocoHandler handler("localhost", 5672);
+
+    AMQP::Connection connection(&handler, AMQP::Login("guest", "guest"), "/");
+
+    AMQP::Channel channel(&connection);
+    channel.declareQueue("hello");
+    channel.consume("hello", AMQP::noack).onReceived(
+            [](const AMQP::Message &message,
+               uint64_t deliveryTag,
+               bool redelivered)
+            {
+                std::string(message.body());
+                std::cout <<" [x] Received "
+                          << std::string(message.body(),message.bodySize())
+                          << std::endl;
+            });
+
+    std::cout << " [*] Waiting for messages. To exit press CTRL-C\n";
+    handler.loop();
+
+    return 0;
+}
