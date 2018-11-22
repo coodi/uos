@@ -6,9 +6,17 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <csignal>
+#include <thread>
 #include "SimplePocoHandler.h"
 
 #include <amqpcpp.h>
+
+#include <mongocxx/client.hpp>
+#include <mongocxx/pool.hpp>
+#include <mongocxx/instance.hpp>
+#include <mongocxx/uri.hpp>
+
+#include <bsoncxx/json.hpp>
 
 std::function<void(int)> shutdown_handler;
 void signal_handler(int signal) { shutdown_handler(signal); }
@@ -59,15 +67,15 @@ int main(int argc, char** argv){
 
     std::ostream out(str_buf);
 
-    SimplePocoHandler handler("localhost", 5672);
+    SimplePocoHandler rabbit_handler("localhost", 5672);
 
     shutdown_handler = [&](int signal_number){
-        handler.quit();
+        rabbit_handler.quit();
         std::cout<<"Gotcha!"<<std::endl;
         PROGRAMM_STOP = 1;
     };
 
-    AMQP::Connection connection(&handler, AMQP::Login("guest", "guest"), "/");
+    AMQP::Connection connection(&rabbit_handler, AMQP::Login("guest", "guest"), "/");
 
     AMQP::Channel channel(&connection);
     channel.declareQueue("hello");
@@ -82,10 +90,59 @@ int main(int argc, char** argv){
                           << std::endl;
             });
 
-    //todo: make the 1-st thread
-    std::cout << " [*] Waiting for messages. To exit press CTRL-C\n";
-    handler.loop();
+/// 1-st thread starts
+
+    std::thread trabbit([&](){
+        std::cout << " [*] Waiting for messages. To exit press CTRL-C"<<std::endl;
+        rabbit_handler.loop();
+    });
+    std::cout<<std::endl<<"Rabbit runs away!"<<std::endl;
+
+//todo: mongo connection
+
+    using namespace bsoncxx::types;
+    using bsoncxx::builder::basic::make_document;
+    using bsoncxx::builder::basic::kvp;
+
+    /// The mongocxx::instance constructor and destructor initialize and shut down the driver,
+    /// respectively. Therefore, a mongocxx::instance must be created before using the driver and
+    /// must remain alive for as long as the driver is in use.
+
+    mongocxx::instance inst{};
+
+    mongocxx::client mongo_conn{mongocxx::uri{"mongodb://localhost"}};
+
+    try{
+        auto db = mongo_conn["testbase"];
+        std::cout<<"here"<<std::endl;
+
+        ///delete database
+
+        db["trx"].drop();
+
+        /// create index
+        db["trx"].create_index( make_document( kvp( "block_id" , 1 )));
+
+        /// 1-st example
+        auto doc = make_document( kvp( "block_num",10 ),kvp("block_id", 12), kvp("memo","hello"));
+        db["trx"].insert_one(doc.view());
+
+        /// 2-nd example
+        db["trx"].insert_one(bsoncxx::from_json( R"xxx({ "block_id" : 10, "block_num" : 15, "memo" : "vasya" })xxx").view());
+
+        /// 3-rd example
+        auto trans_traces_doc = bsoncxx::builder::basic::document{};
+        trans_traces_doc.append(kvp( "block_num",20 ));
+        trans_traces_doc.append(bsoncxx::builder::concatenate_doc{bsoncxx::from_json( R"xxx({ "vasya" : "loh", "sdfsdf" : "sdfsd", "memo" : "vasya2" })xxx")});
+        db["trx"].insert_one(trans_traces_doc.view());
 
 
+    }
+    catch (...){
+        std::cout<<"create index error"<<std::endl;
+    }
+
+    if(trabbit.joinable())
+        trabbit.join();
     return 0;
 }
