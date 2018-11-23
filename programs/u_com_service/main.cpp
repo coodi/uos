@@ -8,6 +8,7 @@
 #include <csignal>
 #include <thread>
 #include "SimplePocoHandler.h"
+#include "thread_safe.hpp"
 
 #include <amqpcpp.h>
 
@@ -22,6 +23,9 @@ std::function<void(int)> shutdown_handler;
 void signal_handler(int signal) { shutdown_handler(signal); }
 
 static int PROGRAMM_STOP=0;
+
+static thread_safe::threadsafe_queue<std::string> q_from_rabbit;
+
 
 int main(int argc, char** argv){
 
@@ -84,15 +88,18 @@ int main(int argc, char** argv){
                uint64_t deliveryTag,
                bool redelivered)
             {
-                std::string(message.body());
+                auto received_json = std::string(message.body(),message.bodySize());
                 out<<" [x] Received "
-                          << std::string(message.body(),message.bodySize())
+                          << received_json
                           << std::endl;
+                if(received_json.size()>0){
+                    q_from_rabbit.push(std::string(message.body(),message.bodySize()));
+                }
             });
 
 /// 1-st thread starts
 
-    std::thread trabbit([&](){
+    std::thread t_rabbit([&](){
         std::cout << " [*] Waiting for messages. To exit press CTRL-C"<<std::endl;
         rabbit_handler.loop();
     });
@@ -112,37 +119,65 @@ int main(int argc, char** argv){
 
     mongocxx::client mongo_conn{mongocxx::uri{"mongodb://localhost"}};
 
-    try{
-        auto db = mongo_conn["testbase"];
-        std::cout<<"here"<<std::endl;
+//    try{
+//        auto db = mongo_conn["testbase"];
+//        std::cout<<"here"<<std::endl;
+//
+//        ///delete database
+//
+//        db["trx"].drop();
+//
+//        /// create index
+//        db["trx"].create_index( make_document( kvp( "block_id" , 1 )));
+//
+//        /// 1-st example
+//        auto doc = make_document( kvp( "block_num",10 ),kvp("block_id", 12), kvp("memo","hello"));
+//        db["trx"].insert_one(doc.view());
+//
+//        /// 2-nd example
+//        db["trx"].insert_one(bsoncxx::from_json( R"xxx({ "block_id" : 10, "block_num" : 15, "memo" : "vasya" })xxx").view());
+//
+//        /// 3-rd example
+//        auto trans_traces_doc = bsoncxx::builder::basic::document{};
+//        trans_traces_doc.append(kvp( "block_num",20 ));
+//        trans_traces_doc.append(bsoncxx::builder::concatenate_doc{bsoncxx::from_json( R"xxx({ "vasya" : "loh", "sdfsdf" : "sdfsd", "memo" : "vasya2" })xxx")});
+//        db["trx"].insert_one(trans_traces_doc.view());
+//
+//
+//    }
+//    catch (...){
+//        std::cout<<"Mongo error"<<std::endl;
+//    }
 
-        ///delete database
+/// 2-nd thread starts
 
-        db["trx"].drop();
+    std::thread t_mongoose([&](){
+        try{
+            auto db = mongo_conn["testbase"];
+            std::cout<<"here"<<std::endl;
+            std::string temp;
+            while (!PROGRAMM_STOP) {
+                std::cout<<".";
+                if(q_from_rabbit.try_pop(temp)){
+                    std::cout<<"+";
+                    if(db["blocks_from_rabbit"].indexes().list().begin() == db["blocks_from_rabbit"].indexes().list().begin()){
+                        db["blocks_from_rabbit"].create_index(make_document(kvp("blocknum",1)));
+                    }
+                    db["blocks_from_rabbit"].insert_one(bsoncxx::from_json(temp));
+                } else{
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+            }
+        }
+        catch(...){
+            std::cout<<"Mongo error"<<std::endl;
+            signal_handler(SIGTERM);
+        }
+    });
 
-        /// create index
-        db["trx"].create_index( make_document( kvp( "block_id" , 1 )));
-
-        /// 1-st example
-        auto doc = make_document( kvp( "block_num",10 ),kvp("block_id", 12), kvp("memo","hello"));
-        db["trx"].insert_one(doc.view());
-
-        /// 2-nd example
-        db["trx"].insert_one(bsoncxx::from_json( R"xxx({ "block_id" : 10, "block_num" : 15, "memo" : "vasya" })xxx").view());
-
-        /// 3-rd example
-        auto trans_traces_doc = bsoncxx::builder::basic::document{};
-        trans_traces_doc.append(kvp( "block_num",20 ));
-        trans_traces_doc.append(bsoncxx::builder::concatenate_doc{bsoncxx::from_json( R"xxx({ "vasya" : "loh", "sdfsdf" : "sdfsd", "memo" : "vasya2" })xxx")});
-        db["trx"].insert_one(trans_traces_doc.view());
-
-
-    }
-    catch (...){
-        std::cout<<"create index error"<<std::endl;
-    }
-
-    if(trabbit.joinable())
-        trabbit.join();
+    if(t_rabbit.joinable())
+        t_rabbit.join();
+    if(t_mongoose.joinable())
+        t_mongoose.join();
     return 0;
 }
