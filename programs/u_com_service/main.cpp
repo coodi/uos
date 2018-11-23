@@ -94,6 +94,7 @@ int main(int argc, char** argv){
                           << std::endl;
                 if(received_json.size()>0){
                     q_from_rabbit.push(std::string(message.body(),message.bodySize()));
+                    std::cout<<"*"<<std::endl;
                 }
             });
 
