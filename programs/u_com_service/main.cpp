@@ -9,6 +9,7 @@
 #include <thread>
 #include "SimplePocoHandler.h"
 #include "thread_safe.hpp"
+#include "rabbitmq_worker.hpp"
 
 #include <amqpcpp.h>
 
@@ -71,38 +72,18 @@ int main(int argc, char** argv){
 
     std::ostream out(str_buf);
 
-    SimplePocoHandler rabbit_handler("localhost", 5672);
+    uos::rabbitmq_worker rabbitmq_input(q_from_rabbit,"localhost",5672,"guest","guest","/","hello");
 
     shutdown_handler = [&](int signal_number){
-        rabbit_handler.quit();
+        rabbitmq_input.stop();
         std::cout<<"Gotcha!"<<std::endl;
         PROGRAMM_STOP = 1;
     };
 
-    AMQP::Connection connection(&rabbit_handler, AMQP::Login("guest", "guest"), "/");
-
-    AMQP::Channel channel(&connection);
-    channel.declareQueue("hello");
-    channel.consume("hello", AMQP::noack).onReceived(
-            [&](const AMQP::Message &message,
-               uint64_t deliveryTag,
-               bool redelivered)
-            {
-                auto received_json = std::string(message.body(),message.bodySize());
-                out<<" [x] Received "
-                          << received_json
-                          << std::endl;
-                if(received_json.size()>0){
-                    q_from_rabbit.push(std::string(message.body(),message.bodySize()));
-                    std::cout<<"*"<<std::endl;
-                }
-            });
-
 /// 1-st thread starts
 
     std::thread t_rabbit([&](){
-        std::cout << " [*] Waiting for messages. To exit press CTRL-C"<<std::endl;
-        rabbit_handler.loop();
+        rabbitmq_input.run(out);
     });
     std::cout<<std::endl<<"Rabbit runs away!"<<std::endl;
 
