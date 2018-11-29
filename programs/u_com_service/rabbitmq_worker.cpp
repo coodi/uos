@@ -1,7 +1,7 @@
 //
 // Created by anton on 26.11.18.
 //
-
+#include <thread>
 #include "rabbitmq_worker.hpp"
 
 namespace uos{
@@ -19,7 +19,9 @@ namespace uos{
                        << std::endl;
                     if(received_json.size()>0){
                         rabbit_queue->push(std::string(message.body(),message.bodySize()));
-                        std::cout<<"*"<<std::endl;
+                        std::cout<<rabbit_queue->size()<<" - "<<std::endl;
+//                        if(rabbit_queue->size()>100000)
+//                            std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     }
                 });
         std::cout << " [*] Waiting for messages. To exit press CTRL-C"<<std::endl;

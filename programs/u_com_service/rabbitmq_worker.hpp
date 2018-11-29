@@ -12,7 +12,7 @@ namespace uos{
 
     class rabbitmq_worker{
 
-        thread_safe::threadsafe_queue<std::string>* rabbit_queue;
+        std::shared_ptr<thread_safe::threadsafe_queue<std::string>> rabbit_queue;
 
         SimplePocoHandler poco_handler;
         AMQP::Connection rb_connection;
@@ -21,7 +21,7 @@ namespace uos{
 
 
     public:
-        rabbitmq_worker(thread_safe::threadsafe_queue<std::string> &rb_out_queue,
+        rabbitmq_worker(std::shared_ptr<thread_safe::threadsafe_queue<std::string>> &rb_out_queue,
                         const std::string &rb_address,
                         const uint16_t    &rb_port,
                         const std::string &rb_login,
@@ -34,7 +34,7 @@ namespace uos{
                             {
                                 rb_queue_name = rb_queue;
                                 rb_channel.declareQueue(rb_queue);
-                                rabbit_queue = &rb_out_queue;
+                                rabbit_queue = rb_out_queue;
                             };
 
         rabbitmq_worker(const rabbitmq_worker&) = delete;

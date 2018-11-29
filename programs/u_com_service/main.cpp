@@ -7,9 +7,11 @@
 #include <boost/bind.hpp>
 #include <csignal>
 #include <thread>
+#include <chrono>
 #include "SimplePocoHandler.h"
 #include "thread_safe.hpp"
 #include "rabbitmq_worker.hpp"
+#include "rate_calculator.hpp"
 
 #include <amqpcpp.h>
 
@@ -19,19 +21,21 @@
 #include <mongocxx/uri.hpp>
 
 #include <bsoncxx/json.hpp>
+#include <fc/log/logger.hpp>
 
 std::function<void(int)> shutdown_handler;
 void signal_handler(int signal) { shutdown_handler(signal); }
 
 static int PROGRAMM_STOP=0;
 
-static thread_safe::threadsafe_queue<std::string> q_from_rabbit;
+
 
 
 int main(int argc, char** argv){
 
     std::streambuf * str_buf;
     std::ofstream str_of;
+    std::shared_ptr<thread_safe::threadsafe_queue<std::string>> q_from_rabbit(new thread_safe::threadsafe_queue<std::string>);
 
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
@@ -97,10 +101,10 @@ int main(int argc, char** argv){
     /// respectively. Therefore, a mongocxx::instance must be created before using the driver and
     /// must remain alive for as long as the driver is in use.
 
-    mongocxx::instance inst{};
-
-    mongocxx::client mongo_conn{mongocxx::uri{"mongodb://localhost"}};
-
+//    mongocxx::instance inst{};
+//
+//    mongocxx::client mongo_conn{mongocxx::uri{"mongodb://localhost"}};
+    {
 //    try{
 //        auto db = mongo_conn["testbase"];
 //        std::cout<<"here"<<std::endl;
@@ -130,36 +134,90 @@ int main(int argc, char** argv){
 //    catch (...){
 //        std::cout<<"Mongo error"<<std::endl;
 //    }
+    }
+
+    uos::uos_calculator calculator;
+    calculator.set_bounds(0, 10000000, 10000000);
+    singularity::parameters_t params;
+    calculator.set_params_activity(params);
+//    calculator.postprocessing_social   = [] (uos::activity_map_t& map){
+//        std::cout<<" social postprocessing"<<std::endl;
+//
+//
+//        return map;
+//    };
+//    calculator.postprocessing_transfer = [] (uos::activity_map_t& map){
+//        std::cout<<" transfer postprocessing"<<std::endl;
+//        return map;
+//    };
+
+    while (!PROGRAMM_STOP) {
+        std::string temp;
+        std::cout << ".";
+        if (q_from_rabbit->try_pop(temp)) {
+            std::cout << "->";
+            auto block = fc::json::from_string(temp);
+
+/// catch command "calculate" {
+            if( (block.get_object().contains("command")) && (block["command"].as_string()=="calculate")){
+
+                bool cont = false;
+                int c = ' ';
+                if(verbose) {
+                    do {
+                        std::cout << "Calculate? " << std::endl;
+                        std::cin >> c;
+                        c = std::tolower(c);
+                        if (PROGRAMM_STOP) break;
+                    } while (!((c == 'n') || (c == 'y')));
+                }
+                if (!verbose||(c=='y')){
+                    calculator.calculate();
+                    //todo: output result
+                }
+                continue;
+            }
+/// } catch command "calculate"
+
+            calculator.parse_block_activity(block);
+
+            std::cout << calculator.social_calculator->get_total_handled_block_count() << std::endl;
+            std::cout << calculator.transfer_calculator->get_total_handled_block_count() << std::endl;
+        } else {
+//            std::cout << "+" << q_from_rabbit->size();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
 
 /// 2-nd thread starts
 
-    std::thread t_mongoose([&](){
-        try{
-            auto db = mongo_conn["testbase"];
-            std::cout<<"here"<<std::endl;
-            std::string temp;
-            while (!PROGRAMM_STOP) {
-                std::cout<<".";
-                if(q_from_rabbit.try_pop(temp)){
-                    std::cout<<"+";
-                    if(db["blocks_from_rabbit"].indexes().list().begin() == db["blocks_from_rabbit"].indexes().list().begin()){
-                        db["blocks_from_rabbit"].create_index(make_document(kvp("blocknum",1)));
-                    }
-                    db["blocks_from_rabbit"].insert_one(bsoncxx::from_json(temp));
-                } else{
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                }
-            }
-        }
-        catch(...){
-            std::cout<<"Mongo error"<<std::endl;
-            signal_handler(SIGTERM);
-        }
-    });
+//    std::thread t_mongoose([&](){
+//        try{
+//            auto db = mongo_conn["testbase"];
+//            std::cout<<"here"<<std::endl;
+//            std::string temp;
+//            while (!PROGRAMM_STOP) {
+//                std::cout<<".";
+//                if(q_from_rabbit.try_pop(temp)){
+//                    std::cout<<"+";
+//                    if(db["blocks_from_rabbit"].indexes().list().begin() == db["blocks_from_rabbit"].indexes().list().begin()){
+//                        db["blocks_from_rabbit"].create_index(make_document(kvp("blocknum",1)));
+//                    }
+//                    db["blocks_from_rabbit"].insert_one(bsoncxx::from_json(temp));
+//                } else{
+//                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//                }
+//            }
+//        }
+//        catch(...){
+//            std::cout<<"Mongo error"<<std::endl;
+//            signal_handler(SIGTERM);
+//        }
+//    });
 
     if(t_rabbit.joinable())
         t_rabbit.join();
-    if(t_mongoose.joinable())
-        t_mongoose.join();
+//    if(t_mongoose.joinable())
+//        t_mongoose.join();
     return 0;
 }

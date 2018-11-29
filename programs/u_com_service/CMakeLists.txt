@@ -1,4 +1,4 @@
-add_executable( u_com_service main.cpp thread_safe.hpp rabbitmq_worker.cpp)
+add_executable( u_com_service main.cpp thread_safe.hpp rabbitmq_worker.cpp rate_calculator.cpp uos_rates_service.hpp)
 
 if( UNIX AND NOT APPLE )
   set(rt_library rt )
