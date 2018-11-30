@@ -31,7 +31,9 @@ namespace uos{
         uint32_t current_block;
 
         singularity::parameters_t parameters;
+
         uos::result_set result;
+
         double transfer_importance_share;
         double social_importance_share;
 
@@ -85,6 +87,11 @@ namespace uos{
         void calculate_mtree2();
 
         void calculate();
+        void clear_result(){ result = result_set();}
         void calculate2();
+
+
+        fc::variant to_variant();
+//        friend std::string string(const uos::uos_calculator&);
     };
 }

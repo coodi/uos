@@ -9,6 +9,7 @@
 #include <fc/io/json.hpp>
 #include "rate_calculator.hpp"
 
+
 std::regex NAME_REGEX("^[^6-90][a-z1-5]*\\.?$");
 
 static const char *const node_type_names[] = {"ACCOUNT", "CONTENT", "ORGANIZATION"};
@@ -170,12 +171,12 @@ namespace uos {
                 result.res_map[gr_item.first].name = gr_item.first;
                 result.res_map[gr_item.first].type = node_type_names[item.first];
                 result.res_map[gr_item.first].soc_rate_double_t = gr_item.second;
-                result.res_map[gr_item.first].soc_rate = gr_item.second.str(10);
+                result.res_map[gr_item.first].soc_rate = to_string(gr_item.second);
             }
             for (auto sc_item : scaled_map) {
                 result.res_map[sc_item.first].name = sc_item.first;
                 result.res_map[sc_item.first].soc_rate_scaled_double_t = sc_item.second;
-                result.res_map[sc_item.first].soc_rate_scaled = sc_item.second.str(10);
+                result.res_map[sc_item.first].soc_rate_scaled = to_string(sc_item.second);
             }
         }
     }
@@ -188,12 +189,12 @@ namespace uos {
                 result.res_map[gr_item.first].name = gr_item.first;
                 result.res_map[gr_item.first].type = node_type_names[item.first];
                 result.res_map[gr_item.first].trans_rate_double_t = gr_item.second;
-                result.res_map[gr_item.first].trans_rate = gr_item.second.str(10);
+                result.res_map[gr_item.first].trans_rate = to_string(gr_item.second);
             }
             for (auto sc_item : scaled_map) {
                 result.res_map[sc_item.first].name = sc_item.first;
                 result.res_map[sc_item.first].trans_rate_scaled_double_t = sc_item.second;
-                result.res_map[sc_item.first].trans_rate_scaled = sc_item.second.str(10);
+                result.res_map[sc_item.first].trans_rate_scaled = to_string(sc_item.second);
             }
         }
     }
@@ -210,8 +211,8 @@ namespace uos {
                     item.second.trans_rate_scaled_double_t * transfer_importance_share +
                     item.second.soc_rate_scaled_double_t * social_importance_share;
 
-            item.second.importance = item.second.importance_double_t.str(10);
-            item.second.importance_scaled = item.second.importance_scaled_double_t.str(10);
+            item.second.importance = to_string(item.second.importance_double_t);
+            item.second.importance_scaled = to_string(item.second.importance_scaled_double_t);
         }
     }
 
@@ -228,8 +229,8 @@ namespace uos {
             item.second.current_cumulative_emission_uos =
                     item.second.prev_cumulative_emission_uos + item.second.current_emission_uos;
 
-            item.second.current_emission = item.second.current_emission_uos.str(4);
-            item.second.current_cumulative_emission = item.second.current_cumulative_emission_uos.str(4);
+            item.second.current_emission = to_string(item.second.current_emission_uos);
+            item.second.current_cumulative_emission = to_string(item.second.current_cumulative_emission_uos);
         }
     }
 
@@ -242,7 +243,7 @@ namespace uos {
             mt_input.emplace_back( std::pair<string,string>{ temp, temp } );
 
             /// should be:
-            /// mt_input.emplace_back( { item.first , item.second.current_cumulative_emission_uos.str( 4 ) } );
+            /// mt_input.emplace_back( { item.first , to_string(item.second.current_cumulative_emission_uos) } );
             ///
 
         }
@@ -253,11 +254,26 @@ namespace uos {
     }
 
     void uos_calculator::calculate() {
+        clear_result();
+        std::cout<<"Start social"<<endl;
         calculate_social2();
+        std::cout<<"Start transfer"<<endl;
         calculate_transfer2();
+        std::cout<<"Start importance"<<endl;
         calculate_importance2();
+        std::cout<<"Start emission"<<endl;
         calculate_emission2();
+        std::cout<<"Start mtree"<<endl;
         calculate_mtree2();
+        std::cout<<"Finish mtree"<<endl;
+    }
 
+    fc::variant uos_calculator::to_variant(){
+        fc::mutable_variant_object temp;
+        temp["current_block"] = current_block;
+        temp["start_block"]   = start_block;
+        temp["end_block"]     = end_block;
+        temp["result"] = result.to_variant();
+        return temp;
     }
 }

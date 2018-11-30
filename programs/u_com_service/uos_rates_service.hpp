@@ -3,50 +3,66 @@
 #include <string>
 #include <map>
 #include <unordered_map>
+#include <fc/variant.hpp>
 #include <../../libraries/singularity/include/singularity.hpp>
 
 namespace uos {
+
+
 
     using std::string;
     using std::map;
     using singularity::double_type;
     using asset_type = boost::multiprecision::number< boost::multiprecision::cpp_dec_float<4> >;
 
+    string rate_to_string(double __val);
+    string asset_to_string(double __val);
+    string to_string(const uos::asset_type &_val);
+    string to_string(const double_type &_val);
+
     class result_item
     {
     public:
         string name;
         string type;
+
         string soc_rate = "0";
         double_type soc_rate_double_t = 0.0;
         string soc_rate_scaled = "0";
         double_type soc_rate_scaled_double_t = 0.0;
+
         string trans_rate = "0";
         double_type trans_rate_double_t = 0.0;
         string trans_rate_scaled = "0";
         double_type trans_rate_scaled_double_t = 0.0;
+
         string importance = "0";
         double_type importance_double_t = 0.0;
         string importance_scaled = "0";
         double_type importance_scaled_double_t = 0.0;
+
         string prev_cumulative_emission = "0";
         asset_type prev_cumulative_emission_uos = 0.0;
         string current_emission = "0";
         asset_type current_emission_uos = 0.0;
         string current_cumulative_emission = "0";
         asset_type current_cumulative_emission_uos = 0.0;
+
+
+        fc::variant to_variant();
+        std::string to_json();
     };
 
     class result_set
     {
     public:
-        uint64_t block_num;
+        uint32_t block_num;
         std::unordered_map<string, result_item> res_map;
         string result_hash;
 
-        result_set(uint64_t bn=0){
-            block_num = bn;
-        };
+        result_set(uint32_t bn=0):block_num(bn){};
+        fc::variant to_variant();
+        std::string to_string();
     };
 
     class upvote_t: public singularity::relation_t
