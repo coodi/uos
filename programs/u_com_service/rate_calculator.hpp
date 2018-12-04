@@ -18,11 +18,38 @@ namespace uos{
     using singularity::parameters_t;
     typedef  std::map<singularity::node_type, std::shared_ptr<account_activity_index_map_t>> activity_map_t;
 
+//    struct uos_calculator_params{
+//        const uint32_t calc_seconds_per_year            = 365*24*3600;
+//        const double   calc_annual_emission_percent     = 1.0;
+//        const int64_t  calc_initial_token_supply        = 1000000000;
+//        const uint8_t  calc_blocks_per_second           = 2;
+//        int32_t        calc_period                      = 300*2;
+//        singularity::parameters_t calc_singularity_parameters;
+//        double         calc_transfer_importance_share   = 0.1;
+//        double         calc_social_importance_share     = 0.1;
+//        uint32_t       calc_start_block                 = 0;
+//        uint32_t       calc_end_block                   = 0;
+//        uint32_t       calc_current_block               = 0;
+//    };
+    struct uos_calculator_params{
+        uint32_t calc_seconds_per_year            = 365*24*3600;
+        double   calc_annual_emission_percent     = 1.0;
+        int64_t  calc_initial_token_supply        = 1000000000;
+        uint8_t  calc_blocks_per_second           = 2;
+        int32_t        calc_period                      = 300*2;
+        singularity::parameters_t calc_singularity_parameters;
+        double         calc_transfer_importance_share   = 0.1;
+        double         calc_social_importance_share     = 0.1;
+        uint32_t       calc_start_block                 = 0;
+        uint32_t       calc_end_block                   = 0;
+        uint32_t       calc_current_block               = 0;
+    };
+
     class uos_calculator{
 
     public:
 
-        singularity::gravity_index_calculator gi_calculator;
+        std::shared_ptr<singularity::gravity_index_calculator> gi_calculator;
         std::shared_ptr<singularity::activity_index_calculator> social_calculator;
         std::shared_ptr<singularity::activity_index_calculator> transfer_calculator;
         std::shared_ptr<singularity::activity_period> activity_calculator; //todo:
@@ -49,7 +76,8 @@ namespace uos{
         std::function< activity_map_t (activity_map_t&)> postprocessing_social;
         std::function< activity_map_t (activity_map_t&)> postprocessing_transfer;
 
-        uos_calculator():gi_calculator(0.1,0.9,100000000000){
+        uos_calculator(){
+            gi_calculator = std::make_shared<singularity::gravity_index_calculator>(0.1,0.9,100000000000);
             start_block = 0;
             end_block   = 0;
             current_block = 0;
@@ -59,11 +87,8 @@ namespace uos{
             postprocessing_social   = [](activity_map_t& map){return map;};
             postprocessing_transfer = [](activity_map_t& map){return map;};
         }
-//        uos_calculator(){
-//            start_block = 0;
-//            end_block   = 0;
-//            current_block = 0;
-//        }
+        uos_calculator(uos_calculator_params);
+
         void set_bounds(uint32_t begin, uint32_t end, uint32_t current){
             start_block     = begin;
             end_block       = end;

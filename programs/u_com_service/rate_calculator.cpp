@@ -166,7 +166,7 @@ namespace uos {
     void uos_calculator::calculate_social2() {
         auto res = social_calculator->calculate();
         for (auto item : res) {
-            auto scaled_map = gi_calculator.scale_activity_index(*item.second);
+            auto scaled_map = gi_calculator->scale_activity_index(*item.second);
             for (auto gr_item : *item.second) {
                 result.res_map[gr_item.first].name = gr_item.first;
                 result.res_map[gr_item.first].type = node_type_names[item.first];
@@ -184,7 +184,7 @@ namespace uos {
     void uos_calculator::calculate_transfer2() {
         auto res = social_calculator->calculate();
         for (auto item : res) {
-            auto scaled_map = gi_calculator.scale_activity_index(*item.second);
+            auto scaled_map = gi_calculator->scale_activity_index(*item.second);
             for (auto gr_item : *item.second) {
                 result.res_map[gr_item.first].name = gr_item.first;
                 result.res_map[gr_item.first].type = node_type_names[item.first];
@@ -270,10 +270,15 @@ namespace uos {
 
     fc::variant uos_calculator::to_variant(){
         fc::mutable_variant_object temp;
+        temp["blocknum"] = current_block;
         temp["current_block"] = current_block;
         temp["start_block"]   = start_block;
         temp["end_block"]     = end_block;
         temp["result"] = result.to_variant();
         return temp;
+    }
+
+    uos_calculator::uos_calculator(uos::uos_calculator_params _params) {
+        auto [seconds_per_year,annual_emission_percent,initial_token_supply,blocks_per_second,period,parameters,transfer_importance_share,social_importance_share,start_block,end_block,current_block] = _params;
     }
 }

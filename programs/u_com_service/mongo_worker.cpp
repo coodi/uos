@@ -93,4 +93,42 @@ namespace uos{
             mongo_conn[connection_name][db_balances].indexes().list().end())
             mongo_conn[connection_name][db_balances].create_index(make_document(kvp("blocknum", 1)));
     }
+
+    std::map<uint64_t , fc::variant> mongo_worker::get_by_block_range(uint64_t _block_start,
+                                                                           uint64_t _block_end,
+                                                                           const std::string &_db) {
+        if(!connected)
+            connect();
+        if(_block_start<_block_end) {
+            std::swap(_block_start, _block_end);
+        }
+        std::map<uint64_t , fc::variant> ret;
+        auto cursor = mongo_conn[connection_name][_db].find(
+                make_document(kvp("blocknum",
+                                  make_document( kvp("$gte",static_cast<int64_t>(_block_start)),
+                                                 kvp("$lte",static_cast<int64_t>(_block_end))))));
+        for (auto&& doc : cursor) {
+            auto temp = fc::json::from_string(bsoncxx::to_json(doc));
+            if(!temp.get_object().contains("blocknum"))
+                continue;
+            ret[temp.get_object()["blocknum"].as_uint64()] = temp;
+            std::cout<<fc::json::to_string(temp)<<std::endl;
+        }
+        return ret;
+    }
+
+    std::map<uint64_t , fc::variant> mongo_worker::get_blocks_range(const uint64_t &_block_start,
+                                                                         const uint64_t &_block_end) {
+        return get_by_block_range(_block_start,_block_end,db_blocks);
+    }
+
+    std::map<uint64_t , fc::variant> mongo_worker::get_results_range(const uint64_t &_block_start,
+                                                                          const uint64_t &_block_end) {
+        return get_by_block_range(_block_start,_block_end,db_results);
+    }
+
+    std::map<uint64_t , fc::variant> mongo_worker::get_balances_range(const uint64_t &_block_start,
+                                                                           const uint64_t &_block_end) {
+        return get_by_block_range(_block_start,_block_end,db_balances);
+    }
 }

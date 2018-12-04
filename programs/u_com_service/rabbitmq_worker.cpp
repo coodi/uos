@@ -7,14 +7,18 @@
 namespace uos{
 
 
-    void rabbitmq_worker::run(std::ostream &out = std::cout) {
+    void rabbitmq_worker::run() {
+        if(rabbit_queue== nullptr){
+            std::cout<<"Rabbit queue not initialized"<<std::endl;
+            return;
+        }
         rb_channel.consume(rb_queue_name, AMQP::noack).onReceived(
                 [&](const AMQP::Message &message,
                     uint64_t deliveryTag,
                     bool redelivered)
                 {
                     auto received_json = std::string(message.body(),message.bodySize());
-                    out<<" [x] Received "
+                    std::cout<<" [x] Received "
                        << received_json
                        << std::endl;
                     if(received_json.size()>0){

@@ -4,20 +4,33 @@
 
 #pragma once
 #include <string>
+#include <fc/variant.hpp>
 #include <mongocxx/client.hpp>
 #include <mongocxx/pool.hpp>
 #include <mongocxx/instance.hpp>
 #include <mongocxx/uri.hpp>
 #include <mongocxx/exception/query_exception.hpp>
+#include <list>
 
 namespace uos{
 
     using std::string;
 
+    struct mongo_params{
+        string   mongo_uri;
+        string   mongo_connection_name;
+        string   mongo_db_blocks;
+        string   mongo_db_results;
+        string   mongo_db_balances;
+        string   mongo_user;
+        string   mongo_password;
+    };
+
     class mongo_worker{
 
         bool                        put_by_uniq_blocknum(const string &_val,const string &_db);
         fc::mutable_variant_object  get_by_blocknum(const uint32_t &_blocknum, const string &_db);
+        std::map<uint64_t , fc::variant> get_by_block_range(uint64_t _block_start, uint64_t _block_end, const string &_db);
 
     public:
         string uri;
@@ -39,6 +52,22 @@ namespace uos{
                  db_blocks(_db_blocks),
                  db_results(_db_results),
                  db_balances(_db_balances)
+                 //user
+                 //password
+        {
+            mongo_conn = mongocxx::client{mongocxx::uri(uri)};
+            connected = true;
+            recheck_indexes();
+        }
+
+        mongo_worker(mongo_params params)
+                :uri(params.mongo_uri),
+                 connection_name(params.mongo_connection_name),
+                 db_blocks(params.mongo_db_blocks),
+                 db_results(params.mongo_db_results),
+                 db_balances(params.mongo_db_balances),
+                 user(params.mongo_user),
+                 password(params.mongo_password)
         {
             mongo_conn = mongocxx::client{mongocxx::uri(uri)};
             connected = true;
@@ -62,6 +91,9 @@ namespace uos{
         fc::mutable_variant_object  get_results(const uint32_t& _blocknum);
         bool    put_results(const string& __val);
 
+        std::map<uint64_t , fc::variant> get_blocks_range(const uint64_t &_block_start, const uint64_t &_block_end);
+        std::map<uint64_t , fc::variant> get_results_range(const uint64_t &_block_start, const uint64_t &_block_end);
+        std::map<uint64_t , fc::variant> get_balances_range(const uint64_t &_block_start, const uint64_t &_block_end);
 
     };
 

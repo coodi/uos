@@ -1,4 +1,4 @@
-add_executable( u_com_service main.cpp thread_safe.hpp rabbitmq_worker.cpp rate_calculator.cpp uos_rates_service.cpp mongo_worker.cpp)
+add_executable( u_com_service main.cpp thread_safe.hpp rabbitmq_worker.cpp rate_calculator.cpp uos_rates_service.cpp mongo_worker.cpp block_processor.cpp)
 
 if( UNIX AND NOT APPLE )
   set(rt_library rt )
@@ -81,7 +81,7 @@ target_compile_definitions(u_com_service
 target_link_libraries( u_com_service
         PRIVATE appbase
         PRIVATE eosio_chain fc  singularity amqpcpp PocoNet PocoFoundation u_com
-        ${EOS_LIBMONGOCXX} ${EOS_LIBBSONCXX} ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+        ${EOS_LIBMONGOCXX} ${EOS_LIBBSONCXX} ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} -Wc++1z-extensions)
 
 install( TARGETS
         u_com_service
