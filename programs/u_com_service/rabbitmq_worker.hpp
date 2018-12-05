@@ -61,7 +61,7 @@ namespace uos{
                             };
         rabbitmq_worker(const rabbitmq_worker&) = delete;
         rabbitmq_worker& operator=(const rabbitmq_worker&) = delete;
-        ~rabbitmq_worker(){stop();}
+        ~rabbitmq_worker(){poco_handler.quit();}
 
         void run();
         void stop();

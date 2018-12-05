@@ -48,14 +48,16 @@ namespace uos {
         if (!th_list.empty())
             stop();
 
-        std::shared_ptr<std::thread> th_rabbit(
-                new thread([&]() {
-                               ptr_rabbit->run();
-                           }
-                )
-        );
+//        std::shared_ptr<std::thread> th_rabbit(
+//                [&]() {
+//                    ptr_rabbit->run();
+//                }
+//
+//        );
 
-        th_list.push_back(th_rabbit);
+        th_list.push_back(make_shared<thread>([&]() {
+            ptr_rabbit->run();
+        }));
 
 
         try {
@@ -64,46 +66,58 @@ namespace uos {
                 if (from_rabbit->try_pop(temp)) {
                     auto block = fc::json::from_string(temp);
 
-                    if ((block.get_object().contains("command")) && (block["command"].as_string() == "calculate")) {
-                        //todo: move to separate thread (process_command)
-                        std::cout << "Start calculating" << std::endl;
-                        auto blocknum = block["blocknum"].as_uint64();
-                        auto begin = block["begin"].as_uint64();
-                        auto end = block["end"].as_uint64();
-                        if (block_cache.begin()->first > begin) {
-                            auto blocks = ptr_mongo->get_blocks_range(begin, block_cache.begin()->first);
-                            block_cache.insert(blocks.begin(), blocks.end());
-                        }
-                        if (block_cache.end()->first < end) {
-                            auto blocks = ptr_mongo->get_blocks_range(block_cache.end()->first, end);
-                            block_cache.insert(blocks.begin(), blocks.end());
-                        }
+                    if (block.get_object().contains("command")) {
 
-                        uos::uos_calculator temp_calc((uos_calculator_params) _all_params);
-                        temp_calc.start_block = begin;
-                        temp_calc.end_block = end;
-                        temp_calc.current_block = blocknum;
-
-                        for (auto item: block_cache) {
-                            if (begin <= item.first <= end) {
-                                temp_calc.parse_block_activity(item.second);
+                        if (block["command"].as_string() == "calculate") {
+                            //todo: move to separate thread (process_command)
+                            std::cout << "Start calculating" << std::endl;
+                            auto blocknum = block["blocknum"].as_uint64();
+                            auto begin = block["begin"].as_uint64();
+                            auto end = block["end"].as_uint64();
+                            if (block_cache.begin()->first > begin) {
+                                auto blocks = ptr_mongo->get_blocks_range(begin, block_cache.begin()->first);
+                                block_cache.insert(blocks.begin(), blocks.end());
                             }
-                        }
-                        temp_calc.calculate();
-                        ptr_mongo->put_results(fc::json::to_string(temp_calc.to_variant()));
-                        //todo send result to rabbit
+                            if (block_cache.end()->first < end) {
+                                auto blocks = ptr_mongo->get_blocks_range(block_cache.end()->first, end);
+                                block_cache.insert(blocks.begin(), blocks.end());
+                            }
 
-                        std::cout << "End calculating" << std::endl;
+                            uos::uos_calculator temp_calc((uos_calculator_params) _all_params);
+                            temp_calc.start_block = begin;
+                            temp_calc.end_block = end;
+                            temp_calc.current_block = blocknum;
+
+                            for (auto item: block_cache) {
+                                if (begin <= item.first <= end) {
+                                    temp_calc.parse_block_activity(item.second);
+                                }
+                            }
+                            temp_calc.calculate();
+                            ptr_mongo->put_results(fc::json::to_string(temp_calc.to_variant()));
+                            //todo send result to rabbit
+
+                            std::cout << "End calculating" << std::endl;
+                            continue;
+                        }
+
+                        if (block["command"].as_string() == "save_balance"){
+                            wlog("catch balances");
+                            if(!block.get_object().contains("blocknum")){
+                                wlog("Block num not found");
+                                continue;
+                            }
+                            ptr_mongo->put_balances(temp);
+                        }
+                        wlog(temp);
                         continue;
                     }
-                    ilog("test");
                     if (!block.get_object().contains("blocknum"))
                         continue;
                     auto blocknum = block["blocknum"].as_uint64();
                     ptr_mongo->put_block(temp);
                     block_cache[blocknum] = block;
-                }
-                else{
+                } else {
                     this_thread::sleep_for(10ms);
                 }
             }

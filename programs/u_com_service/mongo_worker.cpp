@@ -19,7 +19,7 @@ namespace uos{
         if(!connected)
             connect();
         try {
-            fc::variant block = fc::json::from_string(_val, fc::json::legacy_parser, 3);
+            fc::variant block = fc::json::from_string(_val);
             block.get_object();
             bool found = false;
             if (block.get_object().contains("blocknum")) {

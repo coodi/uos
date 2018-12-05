@@ -18,19 +18,6 @@ namespace uos{
     using singularity::parameters_t;
     typedef  std::map<singularity::node_type, std::shared_ptr<account_activity_index_map_t>> activity_map_t;
 
-//    struct uos_calculator_params{
-//        const uint32_t calc_seconds_per_year            = 365*24*3600;
-//        const double   calc_annual_emission_percent     = 1.0;
-//        const int64_t  calc_initial_token_supply        = 1000000000;
-//        const uint8_t  calc_blocks_per_second           = 2;
-//        int32_t        calc_period                      = 300*2;
-//        singularity::parameters_t calc_singularity_parameters;
-//        double         calc_transfer_importance_share   = 0.1;
-//        double         calc_social_importance_share     = 0.1;
-//        uint32_t       calc_start_block                 = 0;
-//        uint32_t       calc_end_block                   = 0;
-//        uint32_t       calc_current_block               = 0;
-//    };
     struct uos_calculator_params{
         uint32_t calc_seconds_per_year            = 365*24*3600;
         double   calc_annual_emission_percent     = 1.0;
