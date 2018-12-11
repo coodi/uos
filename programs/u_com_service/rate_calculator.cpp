@@ -46,7 +46,6 @@ namespace uos {
     }
 
     void uos_calculator::parse_block_activity(fc::variant block) {
-//        std::cout<<"start parse block - ";
         try {
 
             std::vector<std::shared_ptr<singularity::relation_t>> social_interactions;
@@ -70,29 +69,17 @@ namespace uos {
                         if (act == "makecontent") {
                             auto from = data["acc"].as_string();
                             auto to = data["content_id"].as_string();
-//                            if (!(std::regex_match(to.c_str(), NAME_REGEX) &&
-//                                  (std::regex_match(to.c_str(), NAME_REGEX)))) {
-//                                std::cout<<"regex";
-//                                continue;
-//                            }
                             auto content_type_id = data["content_type_id"].as_string();
                             if (content_type_id == "4")
                                 continue;
                             ownership_t ownership(from, to, block_height);
                             social_interactions.push_back(std::make_shared<ownership_t>(ownership));
-//                            std::cout<<"1";
                         }
 
 ///                 case user_to_content
                         else if (act == "usertocont") {
                             auto from = data["acc"].as_string();
                             auto to = data["content_id"].as_string();
-//                            if (!(std::regex_match(to.c_str(), NAME_REGEX) &&
-//                                  (std::regex_match(to.c_str(), NAME_REGEX)))) {
-//                                std::cout<<"regex";
-//
-//                                continue;
-//                            }
                             auto content_type_id = data["interaction_type_id"].as_string();
                             if (content_type_id == "2") {
                                 upvote_t upvote(from, to, block_height);
@@ -101,23 +88,15 @@ namespace uos {
                                 downvote_t downvote(from, to, block_height);
                                 social_interactions.push_back(std::make_shared<downvote_t>(downvote));
                             }
-//                            std::cout<<"2";
                         }
 
 ///                 case make_content_org
                         else if (act == "makecontorg") {
                             auto from = data["organization_id"].as_string();
                             auto to = data["content_id"].as_string();
-//                            if (!(std::regex_match(to.c_str(), NAME_REGEX) &&
-//                                  (std::regex_match(to.c_str(), NAME_REGEX)))) {
-//                                std::cout<<"regex";
-//                                continue;
-//                            }
                             ownership_t ownership(from, to, block_height);
                             social_interactions.push_back(std::make_shared<ownership_t>(ownership));
-//                            std::cout<<"3";
                         } else {
-//                            std::cout<<"5";
                         }
                     }
 ///                 if transfer activity
@@ -130,12 +109,12 @@ namespace uos {
                             auto quantity = eosio::chain::asset::from_string(data["quantity"].as_string());
                             transaction_t transfer(quantity.get_amount(), from, to, time_t(0), block_height);
                             transfer_interactions.push_back(std::make_shared<transaction_t>(transfer));
-//                            std::cout<<"6";
+
                         } else {
-//                            std::cout<<"7";
+
                         }
                     } else {
-//                        std::cout<<"8"<<action["account"].as_string();
+
                     }
                 }
             }
@@ -145,7 +124,6 @@ namespace uos {
                             parameters);
                 }
                 transfer_calculator->add_block(transfer_interactions);
-//                std::cout << "Add transfer ";
             }
             if (!social_interactions.empty()) {
                 if (social_calculator == nullptr) {
@@ -153,9 +131,7 @@ namespace uos {
                             parameters);
                 }
                 social_calculator->add_block(social_interactions);
-//                std::cout << "Add social ";
             }
-//            std::cout<<" end parse block | ";
         }
         catch (...) {
             std::cout << "Block parsing error" << std::endl;
