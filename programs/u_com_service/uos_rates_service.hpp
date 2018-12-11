@@ -26,26 +26,26 @@ namespace uos {
         string name;
         string type;
 
-        string soc_rate = "0";
+        string soc_rate = "0.0.0000000000";
         double_type soc_rate_double_t = 0.0;
-        string soc_rate_scaled = "0";
+        string soc_rate_scaled = "0.0000000000";
         double_type soc_rate_scaled_double_t = 0.0;
 
-        string trans_rate = "0";
+        string trans_rate = "0.0000000000";
         double_type trans_rate_double_t = 0.0;
-        string trans_rate_scaled = "0";
+        string trans_rate_scaled = "0.0000000000";
         double_type trans_rate_scaled_double_t = 0.0;
 
-        string importance = "0";
+        string importance = "0.0.0000000000";
         double_type importance_double_t = 0.0;
-        string importance_scaled = "0";
+        string importance_scaled = "0.0000000000";
         double_type importance_scaled_double_t = 0.0;
 
-        string prev_cumulative_emission = "0";
+        string prev_cumulative_emission = "0.0000";
         asset_type prev_cumulative_emission_uos = 0.0;
-        string current_emission = "0";
+        string current_emission = "0.0000";
         asset_type current_emission_uos = 0.0;
-        string current_cumulative_emission = "0";
+        string current_cumulative_emission = "0.0000";
         asset_type current_cumulative_emission_uos = 0.0;
 
 

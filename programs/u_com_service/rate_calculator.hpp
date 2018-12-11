@@ -48,8 +48,8 @@ namespace uos{
 
         uos::result_set result;
 
-        double transfer_importance_share;
-        double social_importance_share;
+        double social_importance_share = 0.1;
+        double transfer_importance_share = 0.1;
 
         const uint32_t seconds_per_year = 365*24*3600;
         const double annual_emission_percent = 1.0;
@@ -104,6 +104,5 @@ namespace uos{
 
 
         fc::variant to_variant();
-//        friend std::string string(const uos::uos_calculator&);
     };
 }

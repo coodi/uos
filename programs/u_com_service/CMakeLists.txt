@@ -4,13 +4,12 @@ if( UNIX AND NOT APPLE )
   set(rt_library rt )
 endif()
 
-find_package( Gperftools QUIET )
-if( GPERFTOOLS_FOUND )
-    message( STATUS "Found gperftools; compiling eosio-blocklog with TCMalloc")
-    list( APPEND PLATFORM_SPECIFIC_LIBS tcmalloc )
-endif()
+#find_package(libbsoncxx-static REQUIRED)
+#find_package(libmongocxx-static REQUIRED)
 
-find_package(libmongoc-1.0 1.8)
+
+
+find_package(libmongoc-1.0 1.13)
 
 if (libmongoc-1.0_FOUND)
 
@@ -53,7 +52,7 @@ if (libmongoc-1.0_FOUND)
 
     message(STATUS "Found mongocxx library: ${EOS_LIBMONGOCXX}")
 else()
-    message("Could NOT find MongoDB. u_com_service with MongoDB support will not be included.")
+    message("Could NOT find MongoDB. mongo_db_plugin with MongoDB support will not be included.")
     # sudo apt-get install pkg-config libssl-dev libsasl2-dev
     # wget https://github.com/mongodb/mongo-c-driver/releases/download/1.8.0/mongo-c-driver-1.8.0.tar.gz
     # tar xzf mongo-c-driver-1.8.0.tar.gz
@@ -72,16 +71,32 @@ else()
     # sudo apt-get install mongodb
 endif()
 
-target_include_directories(u_com_service PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${LIBMONGOCXX_STATIC_INCLUDE_DIRS} ${LIBBSONCXX_STATIC_INCLUDE_DIRS})
+#message(STATUS "${LIBMONGOCXX_STATIC_LIBRARIES}")
+#message(STATUS "${LIBMONGOCXX_STATIC_INCLUDE_DIRS}")
+#
+#message(STATUS "${LIBBSONCXX_STATIC_LIBRARIES}")
+#message(STATUS "${LIBBSONCXX_STATIC_INCLUDE_DIRS}")
+
+
+find_package( Gperftools QUIET )
+if( GPERFTOOLS_FOUND )
+    message( STATUS "Found gperftools; compiling eosio-blocklog with TCMalloc")
+    list( APPEND PLATFORM_SPECIFIC_LIBS tcmalloc )
+endif()
+
+target_include_directories(u_com_service PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${LIBMONGOCXX_STATIC_INCLUDE_DIRS} ${LIBBSONCXX_STATIC_INCLUDE_DIRS}
+        ${LIBMONGOCXX_STATIC_LIBRARIES} ${LIBBSONCXX_STATIC_LIBRARIES}
+        )
 
 target_compile_definitions(u_com_service
         PRIVATE ${LIBMONGOCXX_STATIC_DEFINITIONS} ${LIBBSONCXX_STATIC_DEFINITIONS}
         )
 
 target_link_libraries( u_com_service
+        PRIVATE ${EOS_LIBMONGOCXX} ${EOS_LIBBSONCXX}
         PRIVATE appbase
         PRIVATE eosio_chain fc  singularity amqpcpp PocoNet PocoFoundation u_com
-        ${EOS_LIBMONGOCXX} ${EOS_LIBBSONCXX} ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} -Wc++1z-extensions)
+        ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} -Wc++1z-extensions)
 
 install( TARGETS
         u_com_service

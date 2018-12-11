@@ -9,11 +9,14 @@
 #include <fc/variant_object.hpp>
 #include <fc/exception/exception.hpp>
 #include "mongo_worker.hpp"
+#include <bsoncxx/builder/basic/document.hpp>
+#include <bsoncxx/builder/basic/kvp.hpp>
+#include <bsoncxx/validate.hpp>
 
 namespace uos{
 
-    using mongocxx::make_document;
-    using mongocxx::kvp;
+    using bsoncxx::builder::basic::make_document;
+    using bsoncxx::builder::basic::kvp;
 
     bool mongo_worker::put_by_uniq_blocknum(const std::string &_val, const std::string &_db) {
         if(!connected)
@@ -21,21 +24,27 @@ namespace uos{
         try {
             fc::variant block = fc::json::from_string(_val);
             block.get_object();
-            bool found = false;
             if (block.get_object().contains("blocknum")) {
+                std::cout<<"test"<<std::endl;
                 try {
                     auto cursor = mongo_conn[connection_name][_db].find(
                             make_document(kvp("blocknum", block.get_object()["blocknum"].as_int64())));
                     if(cursor.begin()!=cursor.end()){
                         mongo_conn[connection_name][_db].delete_one(
                                 make_document(kvp("blocknum", block.get_object()["blocknum"].as_int64())));
-                        found = true;
                     }
                 }
-                catch (mongocxx::query_exception exception) {
-                    found = false;
+                catch (mongocxx::exception exception) {
+                    elog(exception.what());
                 }
-                mongo_conn[connection_name][_db].insert_one(bsoncxx::from_json(_val));
+                try {
+                    mongocxx::options::insert test_o;
+                    test_o.bypass_document_validation(false);
+                    mongo_conn[connection_name][_db].insert_one(bsoncxx::from_json(_val),test_o);
+                }
+                catch (mongocxx::exception exception) {
+                    elog(exception.what());
+                }
                 return true;
             }
         }
@@ -99,10 +108,16 @@ namespace uos{
                                                                            const std::string &_db) {
         if(!connected)
             connect();
-        if(_block_start<_block_end) {
+        if(_block_start>_block_end) {
             std::swap(_block_start, _block_end);
         }
         std::map<uint64_t , fc::variant> ret;
+
+        auto test = make_document(kvp("blocknum",
+                                      make_document( kvp("$gte",static_cast<int64_t>(_block_start)),
+                                                     kvp("$lte",static_cast<int64_t>(_block_end)))));
+        std::cout<<bsoncxx::to_json(test.view())<<std::endl;
+
         auto cursor = mongo_conn[connection_name][_db].find(
                 make_document(kvp("blocknum",
                                   make_document( kvp("$gte",static_cast<int64_t>(_block_start)),
@@ -112,7 +127,6 @@ namespace uos{
             if(!temp.get_object().contains("blocknum"))
                 continue;
             ret[temp.get_object()["blocknum"].as_uint64()] = temp;
-            std::cout<<fc::json::to_string(temp)<<std::endl;
         }
         return ret;
     }

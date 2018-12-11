@@ -9,8 +9,8 @@
 namespace uos{
 
     inline std::string rate_to_string(double __val){
-        const size_t __n = __gnu_cxx::__numeric_traits<double>::__max_exponent10 + 10;
-        return __gnu_cxx::__to_xstring<string>(&std::vsnprintf, __n,"%f", __val);
+        const size_t __n = __gnu_cxx::__numeric_traits<double>::__max_exponent10 + 20;
+        return __gnu_cxx::__to_xstring<string>(&std::vsnprintf, __n,"%0.10f", __val);
     }
 
     std::string to_string(const double_type &_val){
@@ -18,8 +18,8 @@ namespace uos{
     }
 
     inline std::string asset_to_string(double __val){
-        const size_t __n = __gnu_cxx::__numeric_traits<double>::__max_exponent10 + 4;
-        return __gnu_cxx::__to_xstring<string>(&std::vsnprintf, __n,"%f", __val);
+        const size_t __n = __gnu_cxx::__numeric_traits<double>::__max_exponent10 + 20;
+        return __gnu_cxx::__to_xstring<string>(&std::vsnprintf, __n,"%0.4f", __val);
     }
 
     std::string to_string(const uos::asset_type &_val){

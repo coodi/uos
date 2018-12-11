@@ -66,15 +66,11 @@ int main(int argc, char** argv) {
         str_buf = std::cout.rdbuf();
     }
 
-    std::ostream out(str_buf);
-
-//    uos::rabbitmq_worker rabbitmq_input(q_from_rabbit,"localhost",5672,"guest","guest","/","hello");
-//
-
 
     uos::block_processor_params _params;
     _params.rabbit_host = "localhost";
     _params.rabbit_input_queue = "hello";
+    _params.rabbit_output_queue = "goodbye";
     _params.rabbit_path = "/";
     _params.rabbit_login = "guest";
     _params.rabbit_password = "guest";

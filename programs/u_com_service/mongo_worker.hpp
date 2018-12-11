@@ -9,7 +9,7 @@
 #include <mongocxx/pool.hpp>
 #include <mongocxx/instance.hpp>
 #include <mongocxx/uri.hpp>
-#include <mongocxx/exception/query_exception.hpp>
+#include <mongocxx/exception/exception.hpp>
 #include <list>
 
 namespace uos{

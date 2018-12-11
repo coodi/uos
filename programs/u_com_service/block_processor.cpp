@@ -13,18 +13,20 @@ namespace uos {
     }
 
     void block_processor::init(block_processor_params _params) {
-        from_rabbit = std::make_shared<thread_safe::threadsafe_queue<string>>();
-        to_rabbit = std::make_shared<thread_safe::threadsafe_queue<string>>();
+        from_rabbit             = std::make_shared<thread_safe::threadsafe_queue<string>>();
+        to_rabbit               = std::make_shared<thread_safe::threadsafe_queue<string>>();
 
-        ptr_mongo = std::make_shared<mongo_worker>(mongo_params(_params));
-        ptr_rabbit = std::make_shared<rabbitmq_worker>(from_rabbit, rabbit_params(_params));
-//        ptr_calculator = std::make_shared<uos_calculator>(uos_calculator_params(_params));
-        ptr_calculator = std::make_shared<uos_calculator>();
+        ptr_mongo               = std::make_shared<mongo_worker>(mongo_params(_params));
+        ptr_rabbit_receiver     = std::make_shared<rabbitmq_worker>(from_rabbit, true, rabbit_params(_params));
+        ptr_rabbit_transmitter  = std::make_shared<rabbitmq_worker>(to_rabbit, false,rabbit_params(_params));
+//        ptr_calculator          = std::make_shared<uos_calculator>(uos_calculator_params(_params));
+        ptr_calculator          = std::make_shared<uos_calculator>();
     }
 
     void block_processor::stop() {
 
-        ptr_rabbit->stop();
+        ptr_rabbit_transmitter->stop();
+        ptr_rabbit_receiver->stop();
         exit = true;
         for (auto item : th_list) {
             if (item != nullptr) {
@@ -39,26 +41,22 @@ namespace uos {
 
     void block_processor::start() {
 
-        if (ptr_mongo == nullptr) return;
-        if (ptr_calculator == nullptr) return;
-        if (ptr_rabbit == nullptr) return;
-        if (from_rabbit == nullptr) return;
-        if (to_rabbit == nullptr) return;
+        if ( ptr_mongo               == nullptr ) return;
+        if ( ptr_calculator          == nullptr ) return;
+        if ( ptr_rabbit_receiver     == nullptr ) return;
+        if ( ptr_rabbit_transmitter  == nullptr ) return;
+        if ( from_rabbit             == nullptr ) return;
+        if ( to_rabbit               == nullptr ) return;
 
-        if (!th_list.empty())
+        if ( !th_list.empty() )
             stop();
 
-//        std::shared_ptr<std::thread> th_rabbit(
-//                [&]() {
-//                    ptr_rabbit->run();
-//                }
-//
-//        );
-
         th_list.push_back(make_shared<thread>([&]() {
-            ptr_rabbit->run();
+            ptr_rabbit_receiver->run();
         }));
-
+        th_list.push_back(make_shared<thread>([&]() {
+            ptr_rabbit_transmitter->run();
+        }));
 
         try {
             std::string temp;
@@ -74,13 +72,21 @@ namespace uos {
                             auto blocknum = block["blocknum"].as_uint64();
                             auto begin = block["begin"].as_uint64();
                             auto end = block["end"].as_uint64();
-                            if (block_cache.begin()->first > begin) {
-                                auto blocks = ptr_mongo->get_blocks_range(begin, block_cache.begin()->first);
+                            if(block_cache.empty()){
+                                std::cout<<"load all blocks from db"<<std::endl;
+                                auto blocks = ptr_mongo->get_blocks_range(begin, end);
                                 block_cache.insert(blocks.begin(), blocks.end());
-                            }
-                            if (block_cache.end()->first < end) {
-                                auto blocks = ptr_mongo->get_blocks_range(block_cache.end()->first, end);
-                                block_cache.insert(blocks.begin(), blocks.end());
+                            }else {
+                                if (block_cache.begin()->first > begin) {
+                                    std::cout << "load from start" << std::endl;
+                                    auto blocks = ptr_mongo->get_blocks_range(begin, block_cache.begin()->first);
+                                    block_cache.insert(blocks.begin(), blocks.end());
+                                }
+                                if (block_cache.end()->first < end) {
+                                    std::cout << "load from end" << std::endl;
+                                    auto blocks = ptr_mongo->get_blocks_range(block_cache.end()->first, end);
+                                    block_cache.insert(blocks.begin(), blocks.end());
+                                }
                             }
 
                             uos::uos_calculator temp_calc((uos_calculator_params) _all_params);
@@ -94,9 +100,9 @@ namespace uos {
                                 }
                             }
                             temp_calc.calculate();
-                            ptr_mongo->put_results(fc::json::to_string(temp_calc.to_variant()));
-                            //todo send result to rabbit
-
+                            std::string report = fc::json::to_string(temp_calc.to_variant());
+                            to_rabbit -> push(std::string(report));
+                            ptr_mongo -> put_results(report);
                             std::cout << "End calculating" << std::endl;
                             continue;
                         }
@@ -126,8 +132,5 @@ namespace uos {
             elog("Mongo error");
             stop();
         }
-
-
     }
-
 }

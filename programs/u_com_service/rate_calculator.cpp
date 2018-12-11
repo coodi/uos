@@ -7,6 +7,7 @@
 #include <eosio/chain/name.hpp>
 #include <eosio/chain/asset.hpp>
 #include <fc/io/json.hpp>
+#include <thread>
 #include "rate_calculator.hpp"
 
 
@@ -144,7 +145,7 @@ namespace uos {
                             parameters);
                 }
                 transfer_calculator->add_block(transfer_interactions);
-                std::cout << "Add transfer ";
+//                std::cout << "Add transfer ";
             }
             if (!social_interactions.empty()) {
                 if (social_calculator == nullptr) {
@@ -152,7 +153,7 @@ namespace uos {
                             parameters);
                 }
                 social_calculator->add_block(social_interactions);
-                std::cout << "Add social ";
+//                std::cout << "Add social ";
             }
 //            std::cout<<" end parse block | ";
         }

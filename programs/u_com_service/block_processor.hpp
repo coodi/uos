@@ -21,14 +21,15 @@ namespace uos{
             public rabbit_params,
             public uos_calculator_params
     {
+        block_processor_params():mongo_params(),rabbit_params(),uos_calculator_params(){}
         string block_processor;
-//        std::streambuf *out_buf;
     };
 
     class block_processor{
 
         std::shared_ptr<mongo_worker> ptr_mongo;
-        std::shared_ptr<rabbitmq_worker> ptr_rabbit;
+        std::shared_ptr<rabbitmq_worker> ptr_rabbit_receiver;
+        std::shared_ptr<rabbitmq_worker> ptr_rabbit_transmitter;
         std::shared_ptr<uos_calculator> ptr_calculator;
         std::shared_ptr<thread_safe::threadsafe_queue<string>> from_rabbit;
         std::shared_ptr<thread_safe::threadsafe_queue<string>> to_rabbit;
@@ -43,8 +44,6 @@ namespace uos{
         list<shared_ptr<thread>> th_list;
         bool exit = false;
         std::streambuf *out_buf;
-//        std::mutex init_start_mutex;
-//        std::mutex stop_mutex;
 
 
     public:
