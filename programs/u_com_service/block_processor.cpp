@@ -77,16 +77,21 @@ namespace uos {
                                 auto blocks = ptr_mongo->get_blocks_range(begin, end);
                                 block_cache.insert(blocks.begin(), blocks.end());
                             }else {
+                                std::cout<<"In cache "<<block_cache.size()<<" blocks: from "<<block_cache.begin()->first<<" to: "<<block_cache.rbegin()->first<<std::endl;
                                 if (block_cache.begin()->first > begin) {
                                     std::cout << "load from start" << std::endl;
                                     auto blocks = ptr_mongo->get_blocks_range(begin, block_cache.begin()->first);
+                                    std::cout<<blocks.size()<<std::endl;
                                     block_cache.insert(blocks.begin(), blocks.end());
                                 }
-                                if (block_cache.end()->first < end) {
+                                std::cout<<"In cache "<<block_cache.size()<<" blocks: from "<<block_cache.begin()->first<<" to: "<<block_cache.rbegin()->first<<std::endl;
+                                if (block_cache.rbegin()->first < end) {
                                     std::cout << "load from end" << std::endl;
-                                    auto blocks = ptr_mongo->get_blocks_range(block_cache.end()->first, end);
+                                    auto blocks = ptr_mongo->get_blocks_range(block_cache.rbegin()->first, end);
+                                    std::cout<<blocks.size()<<std::endl;
                                     block_cache.insert(blocks.begin(), blocks.end());
                                 }
+                                std::cout<<"In cache "<<block_cache.size()<<" blocks: from "<<block_cache.begin()->first<<" to: "<<block_cache.rbegin()->first<<std::endl;
                             }
 
                             uos::uos_calculator temp_calc((uos_calculator_params) _all_params);

@@ -25,7 +25,6 @@ namespace uos{
             fc::variant block = fc::json::from_string(_val);
             block.get_object();
             if (block.get_object().contains("blocknum")) {
-                std::cout<<"test"<<std::endl;
                 try {
                     auto cursor = mongo_conn[connection_name][_db].find(
                             make_document(kvp("blocknum", block.get_object()["blocknum"].as_int64())));
