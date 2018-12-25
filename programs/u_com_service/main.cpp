@@ -41,7 +41,25 @@ int main(int argc, char** argv) {
     bpo::options_description desc("General u_com_service options");
 
     desc.add_options()
-            ("verbose,v", bpo::bool_switch(&verbose), " run program in foreground");
+            ("verbose,v", bpo::bool_switch(&verbose), " run program in foreground")
+
+            ("rabbit-host",         bpo::value<std::string>()->default_value("localhost"),  "RabbitMQ host")
+            ("rabbit-input-queue",  bpo::value<std::string>()->default_value("hello"),      "RabbitMQ input data queue")
+            ("rabbit-output-queue",  bpo::value<std::string>()->default_value("goodbye"),    "RabbitMQ output data queue")
+            ("rabbit-path",         bpo::value<std::string>()->default_value("/"),      "RabbitMQ input/output data queue path")
+            ("rabbit-login",  bpo::value<std::string>()->default_value("guest"),    "RabbitMQ login")
+            ("rabbit-password",  bpo::value<std::string>()->default_value("guest"),    "RabbitMQ password")
+            ("rabbit-port",  bpo::value<uint16_t >()->default_value(5672),    "RabbitMQ port")
+
+            ("mongo-uri",  bpo::value<std::string>()->default_value("mongodb://localhost"),    "MongoDB URI")
+            ("mongo-connection",  bpo::value<std::string>()->default_value("testbase"),    "MongoDB Connection name")
+            ("mongo-user",  bpo::value<std::string>()->default_value(""),    "MongoDB user name")
+            ("mongo-password",  bpo::value<std::string>()->default_value(""),    "MongoDB user password")
+            ("mongo-db-blocks",  bpo::value<std::string>()->default_value("blocks_from_rabbit"),    "MongoDB collection for saving blocks")
+            ("mongo-db-balances",  bpo::value<std::string>()->default_value("balances"),    "MongoDB collection for saving balances")
+            ("mongo-db-resuls",  bpo::value<std::string>()->default_value("results"),    "MongoDB collection for saving calculation results")
+            ;
+
     bpo::parsed_options parsed = bpo::command_line_parser(argc, argv).options(desc).allow_unregistered().run();
     bpo::variables_map vmap;
     bpo::store(parsed, vmap);
@@ -66,22 +84,44 @@ int main(int argc, char** argv) {
         str_buf = std::cout.rdbuf();
     }
 
+    for(auto item : vmap){
+        std::cout<<item.first<<std::endl;//<<" "<<item.second.as<std::string>()<<std::endl;
+    }
 
     uos::block_processor_params _params;
-    _params.rabbit_host = "localhost";
-    _params.rabbit_input_queue = "hello";
-    _params.rabbit_output_queue = "goodbye";
-    _params.rabbit_path = "/";
-    _params.rabbit_login = "guest";
-    _params.rabbit_password = "guest";
-    _params.rabbit_port = 5672;
-    _params.mongo_password = "";
-    _params.mongo_user = "";
-    _params.mongo_db_results = "results";
-    _params.mongo_db_blocks = "blocks_from_rabbit";
-    _params.mongo_db_balances = "balances";
-    _params.mongo_connection_name = "testbase";
-    _params.mongo_uri = "mongodb://localhost";
+
+    _params.rabbit_host = vmap.at("rabbit-host").as<std::string>();
+    _params.rabbit_input_queue = vmap.at("rabbit-input-queue").as<std::string>();
+    _params.rabbit_output_queue = vmap.at("rabbit-output-queue").as<std::string>();
+    _params.rabbit_path = vmap.at("rabbit-path").as<std::string>();
+    _params.rabbit_login = vmap.at("rabbit-login").as<std::string>();
+    _params.rabbit_password = vmap.at("rabbit-password").as<std::string>();
+    _params.rabbit_port = vmap.at("rabbit-port").as<uint16_t >();
+
+    _params.mongo_password = vmap.at("mongo-user").as<std::string>();
+    _params.mongo_user = vmap.at("mongo-password").as<std::string>();
+    _params.mongo_db_results = vmap.at("mongo-db-resuls").as<std::string>();
+    _params.mongo_db_blocks = vmap.at("mongo-db-blocks").as<std::string>();
+    _params.mongo_db_balances = vmap.at("mongo-db-balances").as<std::string>();
+    _params.mongo_connection_name = vmap.at("mongo-connection").as<std::string>();
+    _params.mongo_uri = vmap.at("mongo-uri").as<std::string>();
+
+
+//
+//    _params.rabbit_host = "localhost";
+//    _params.rabbit_input_queue = "hello";
+//    _params.rabbit_output_queue = "goodbye";
+//    _params.rabbit_path = "/";
+//    _params.rabbit_login = "guest";
+//    _params.rabbit_password = "guest";
+//    _params.rabbit_port = 5672;
+//    _params.mongo_password = "";
+//    _params.mongo_user = "";
+//    _params.mongo_db_results = "results";
+//    _params.mongo_db_blocks = "blocks_from_rabbit";
+//    _params.mongo_db_balances = "balances";
+//    _params.mongo_connection_name = "testbase";
+//    _params.mongo_uri = "mongodb://localhost";
 
     uos::block_processor test(_params);
 
