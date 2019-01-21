@@ -143,7 +143,7 @@ namespace uos {
     void uos_calculator::calculate_social2() {
         auto res = social_calculator->calculate();
         for (auto item : res) {
-            auto scaled_map = gi_calculator->scale_activity_index(*item.second);
+            auto scaled_map = gi_calculator->scale_activity_index_to_node_count(*item.second);
             for (auto gr_item : *item.second) {
                 result.res_map[gr_item.first].name = gr_item.first;
                 result.res_map[gr_item.first].type = node_type_names[item.first];
@@ -161,7 +161,7 @@ namespace uos {
     void uos_calculator::calculate_transfer2() {
         auto res = social_calculator->calculate();
         for (auto item : res) {
-            auto scaled_map = gi_calculator->scale_activity_index(*item.second);
+            auto scaled_map = gi_calculator->scale_activity_index_to_node_count(*item.second);
             for (auto gr_item : *item.second) {
                 result.res_map[gr_item.first].name = gr_item.first;
                 result.res_map[gr_item.first].type = node_type_names[item.first];

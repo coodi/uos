@@ -37,7 +37,7 @@ namespace uos{
     public:
 
         std::shared_ptr<singularity::gravity_index_calculator> gi_calculator;
-        std::shared_ptr<singularity::activity_index_calculator> social_calculator;
+        std::shared_ptr<singularity::social_index_calculator> social_calculator;
         std::shared_ptr<singularity::activity_index_calculator> transfer_calculator;
         std::shared_ptr<singularity::activity_period> activity_calculator; //todo:
         uint32_t start_block;
