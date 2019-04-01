@@ -1,4 +1,5 @@
 #!/bin/bash
+printf "\\nthis is old branch of UOS\\n"
 ##########################################################################
 # This is the EOSIO automated install script for Linux and Mac OS.
 # This file was downloaded from https://github.com/EOSIO/eos
