@@ -25,19 +25,21 @@ CentOS7: yum -y install boost-devel
 Compile:
 ```
 ./scripts/eosio_build.sh
-
 ```
+
+
 Install:
 ```
-
 ./scripts/eosio_install.sh
 ```
+
 
 Run and stop the node to generate the default config
 ```
 nodeos
 Ctrl+C
 ```
+
 
 Add the seed nodes to the default config at ~/.local/share/eosio/nodeos/config/config.ini
 ```
